@@ -16,8 +16,7 @@ Requires the .NET 10 SDK. From this folder:
 
 ## Status
 Builds cleanly and starts on Arch (.NET 10 SDK, Avalonia 11.3). dddice guest rolls have been checked end to end
-(prepare, 2d6+1, d20, d100) and the keyring store round-trips. Not yet checked by hand: most screens' behaviour,
-and connecting a real dddice account (Account…).
+(prepare, 2d6+1, d20, d100) and the keyring store round-trips. dddice rolls appear in a floating window.
 
 Highest-risk spots:
 - `Platform/UiSync.cs` — nested `Dispatcher.UIThread.MainLoop` used so the
