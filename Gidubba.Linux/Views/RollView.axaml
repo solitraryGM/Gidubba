@@ -1,0 +1,385 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:TableForge.Views"
+             x:Class="TableForge.Views.RollView">
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="MatchBrush" Color="#DFF1E1" />
+        <!-- A used Unique row: a light gray background and muted text that still reads clearly on it (about 5.6:1). -->
+        <SolidColorBrush x:Key="UsedBrush" Color="#EEEEEE" />
+        <SolidColorBrush x:Key="UsedText" Color="#5F5F5F" />
+        <SolidColorBrush x:Key="ProblemText" Color="#A00000" />
+        <SolidColorBrush x:Key="WarningText" Color="#7A5200" />
+        <!-- Aligned columns share the width left after each row's 4 px padding either side and its 90 px range column. -->
+        <views:AlignedColumnWidth x:Key="AlignedWidth" Fixed="98" Gap="0" />
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- A result line the table could not produce (an error) is smaller and red. -->
+        <Style Selector="TextBlock.problem">
+            <Setter Property="Foreground" Value="{DynamicResource ProblemText}" />
+            <Setter Property="FontSize" Value="18" />
+        </Style>
+
+        <!-- A row's result text in the table listing: a used Unique row stays fully readable, only muted (its "Used" tag says why).
+             The row just rolled keeps normal text on its green highlight, used or not. -->
+        <Style Selector="TextBlock.entrytext.used:not(.matched)">
+            <Setter Property="Foreground" Value="{DynamicResource UsedText}" />
+        </Style>
+
+        <!-- Used is gray across the whole row; the rolled row's green comes after it, so it wins. -->
+        <Style Selector="Border.entry.used">
+            <Setter Property="Background" Value="{DynamicResource UsedBrush}" />
+        </Style>
+        <Style Selector="Border.entry.matched">
+            <Setter Property="Background" Value="{DynamicResource MatchBrush}" />
+        </Style>
+
+        <!-- Aligned table: the whole row is green when rolled; each cell is gray on its own when used (never over the green). -->
+        <Style Selector="Border.alignedrow.matched">
+            <Setter Property="Background" Value="{DynamicResource MatchBrush}" />
+        </Style>
+        <Style Selector="Border.cell.used:not(.matched)">
+            <Setter Property="Background" Value="{DynamicResource UsedBrush}" />
+        </Style>
+
+        <!-- A row's "Unique" or "Used" tag: a small, quiet pill after its result text, read as a label on the row rather than as more
+             of its text. Used is a neutral gray pill with a hairline edge so it still shows on a used row's gray. -->
+        <Style Selector="Border.pill">
+            <Setter Property="Background" Value="#E8EEF6" />
+            <Setter Property="BorderBrush" Value="#D3DDEA" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="6,0,6,1" />
+            <Setter Property="Margin" Value="6,1,0,0" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+        </Style>
+        <Style Selector="Border.pill.used">
+            <Setter Property="Background" Value="#E2E2E2" />
+            <Setter Property="BorderBrush" Value="#CCCCCC" />
+        </Style>
+        <Style Selector="TextBlock.pilllabel">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="#3A5573" />
+        </Style>
+        <Style Selector="TextBlock.pilllabel.used">
+            <Setter Property="Foreground" Value="#555555" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer x:Name="TrailScroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="TrailContent" Margin="16">
+
+            <!-- The trail: every table rolled so far in this linked sequence, oldest first. -->
+            <ItemsControl x:Name="StepsList" ItemsSource="{Binding Steps}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="↓" FontSize="22" Foreground="#888" Margin="0,0,0,6" IsVisible="{Binding !IsFirst}" />
+
+                            <!-- Only for a step auto-follow opened: a compact note of where it came from (the parent's result is on the step above). -->
+                            <TextBlock Text="{Binding AutoFollowedFrom}" Foreground="#666" FontStyle="Italic"
+                                       TextWrapping="Wrap" Margin="0,0,0,2" IsVisible="{Binding IsAutoFollowed}" />
+                            <!-- Only for a step Back to the original table added. -->
+                            <TextBlock Text="Back to the original table" Foreground="#666" FontStyle="Italic"
+                                       TextWrapping="Wrap" Margin="0,0,0,2" IsVisible="{Binding IsReturn}" />
+                            <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding DiceInfo}" Foreground="#666" Margin="0,2,0,8" />
+                            <!-- The table's own description, when it has one: secondary, plain, wrapping. -->
+                            <TextBlock Text="{Binding Description}" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,8"
+                                       IsVisible="{Binding HasDescription}" />
+                            <!-- A Manual-selection table: a small hint that its result is meant to be chosen. Roll still works as always. -->
+                            <TextBlock Text="Manual-selection table: choose the result and enter it below."
+                                       Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" Margin="0,0,0,8"
+                                       IsVisible="{Binding IsManualSelection}" />
+                            <TextBlock Text="Not rolled yet." Foreground="#888" FontStyle="Italic" Margin="0,0,0,4"
+                                       IsVisible="{Binding !HasOutcomes}" />
+
+                            <!-- Each roll is shown once, followed by the output of every result set. -->
+                            <ItemsControl ItemsSource="{Binding Outcomes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,10">
+                                            <!-- "Roll 2": only for the results of one Roll action that made several rolls, each kept separate. -->
+                                            <TextBlock Text="{Binding BatchLabel}" FontWeight="SemiBold" Foreground="#333" Margin="0,4,0,2"
+                                                       IsVisible="{Binding HasBatchLabel}" />
+                                            <TextBlock Text="{Binding Display}" FontSize="16" Foreground="#555" Margin="0,0,0,4" />
+                                            <!-- Only for a roll that used a situational modifier: how the final number was reached. -->
+                                            <TextBlock Text="{Binding Breakdown}" Foreground="#555" Margin="0,0,0,4"
+                                                       IsVisible="{Binding HasBreakdown}" />
+                                            <!-- Only for a roll the table's Clamp to Range looked up at a boundary: the number above stays
+                                                 what was calculated; this is the value the table was resolved with. -->
+                                            <TextBlock Text="{Binding ClampNote}" Foreground="#555" FontWeight="SemiBold" Margin="0,0,0,4"
+                                                       IsVisible="{Binding HasClampNote}" />
+                                            <!-- Only for a result that took rerolls: used Unique results came up first and were rolled again. -->
+                                            <TextBlock Text="{Binding RerollNote}" Foreground="#555" Margin="0,0,0,4"
+                                                       ToolTip.Tip="Used Unique results came up first, so the same dice were rolled again."
+                                                       IsVisible="{Binding HasRerollNote}" />
+                                            <ItemsControl ItemsSource="{Binding Lines}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Margin="0,0,0,8">
+                                                            <TextBlock Text="{Binding Heading}" FontWeight="SemiBold" Foreground="#555"
+                                                                       IsVisible="{Binding HasHeading}" />
+                                                            <TextBlock views:FormattedText.Segments="{Binding Segments}" FontSize="26" TextWrapping="Wrap"
+                                                                       Classes.problem="{Binding IsProblem}" />
+                                                            <!-- The text above with each rolled inline expression replaced in place by its latest value
+                                                                 ("You gain +3 Armor"). A transient, subordinate copy: the text above never changes. -->
+                                                            <TextBlock views:FormattedText.Segments="{Binding ResolvedSegments}"
+                                                                       FontSize="18" Foreground="#555" TextWrapping="Wrap" Margin="0,4,0,0"
+                                                                       IsVisible="{Binding ShowResolved}" />
+                                                            <!-- Dice expressions found inside the text above, offered as separate, user-triggered rolls. -->
+                                                            <ItemsControl ItemsSource="{Binding InlineActions}" Margin="0,4,0,0"
+                                                                          IsVisible="{Binding ShowInlineActions}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Button Content="{Binding RollLabel}" Command="{Binding RollCommand}"
+                                                                                Padding="10,3" Margin="0,2,8,0" VerticalAlignment="Center" />
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                            <!-- A link is only ever followed by the user, and never rolls the destination. -->
+                                                            <Button Content="{Binding FollowLabel}" Command="{Binding FollowCommand}"
+                                                                    HorizontalAlignment="Left" Padding="14,5" Margin="0,4,0,0"
+                                                                    IsVisible="{Binding ShowFollow}" />
+                                                            <TextBlock Text="{Binding LinkedNote}" Foreground="#777" Margin="0,2,0,0"
+                                                                       IsVisible="{Binding ShowLinkedNote}" />
+                                                            <TextBlock Text="{Binding UnresolvedNote}" Foreground="{DynamicResource WarningText}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                                                       IsVisible="{Binding ShowUnresolved}" />
+                                                            <TextBlock Text="⚠ The linked table no longer exists." Foreground="{DynamicResource WarningText}" Margin="0,4,0,0"
+                                                                       IsVisible="{Binding ShowMissing}" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Rolling always applies to the current (last) table in the trail. -->
+            <StackPanel x:Name="RollControls" Margin="0,6,0,0">
+                <!-- Only after a link was followed (by hand or by auto-follow): back to the table this screen was opened on, as a new
+                     step below. Earlier results stay; nothing is rolled; it never happens by itself. -->
+                <Button x:Name="ReturnToOriginalButton" Content="{Binding ReturnToOriginalLabel}" Command="{Binding ReturnToOriginalCommand}"
+                        HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,10"
+                        ToolTip.Tip="Make the table you started from the current table again. Earlier results stay where they are."
+                        IsVisible="{Binding ShowReturnToOriginal}" />
+                <WrapPanel Orientation="Horizontal">
+                    <!-- How many independent rolls one Roll makes: chosen by the person (1 by default), never read from a table's text.
+                         Manual entry is always one typed result and ignores it. -->
+                    <TextBlock Text="Rolls:" Foreground="#666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox x:Name="RollCountBox" ItemsSource="{Binding RollCountOptions}" SelectedItem="{Binding RollCount}" MinWidth="72"
+                              VerticalAlignment="Center" Margin="0,0,10,0" IsEnabled="{Binding IsRollCountEditable}"
+                              AutomationProperties.Name="Number of rolls" ToolTip.Tip="How many times Roll rolls this table (each result is kept separately)" />
+                    <Button x:Name="RollButton" Content="{Binding RollButtonLabel}" FontSize="18" Padding="32,8" Command="{Binding RollCommand}" />
+                    <!-- A temporary situational modifier for the next Roll only: added after the dice, then reset to 0. Not for d66,
+                         manual entry or inline rolls, and locked while a roll is in the air (that roll already took its value). -->
+                    <StackPanel Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center" IsVisible="{Binding IsModifierAvailable}">
+                        <TextBlock Text="Modifier:" Foreground="#666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBox x:Name="ModifierBox" Width="70" Padding="4" VerticalContentAlignment="Center"
+                                 AutomationProperties.Name="Situational modifier"
+                                 ToolTip.Tip="Added to the next Roll only (for example +2 or -1), then reset to 0. Not used by a typed roll."
+                                 IsEnabled="{Binding IsModifierEditable}"
+                                 Text="{Binding ModifierText}">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding RollCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                    </StackPanel>
+                    <!-- Shown only while a roll is in the air; the table result appears when it settles. -->
+                    <TextBlock x:Name="RollStatusText" Text="{Binding RollStatus}" AutomationProperties.AutomationId="RollStatus"
+                               FontSize="16" Foreground="#555" VerticalAlignment="Center" Margin="14,0,0,0" />
+                    <!-- Stop: only while something is under way (a roll, several rolls, an inline roll or an auto-follow chain). -->
+                    <Button x:Name="StopButton" Content="Stop" Padding="12,4" Margin="10,0,0,0" VerticalAlignment="Center" Command="{Binding StopCommand}"
+                            ToolTip.Tip="Stop the roll or auto-follow under way" IsVisible="{Binding IsRolling}" />
+                    <TextBlock Text="or enter a roll:" Foreground="#666" VerticalAlignment="Center" Margin="24,0,8,0" />
+                    <TextBox x:Name="ManualBox" Width="90" Padding="4" VerticalContentAlignment="Center" Text="{Binding ManualRollText}">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding ResolveManualCommand}" />
+                        </TextBox.KeyBindings>
+                    </TextBox>
+                    <Button Content="Resolve" Padding="14,6" Margin="8,0,0,0" Command="{Binding ResolveManualCommand}" />
+                </WrapPanel>
+                <!-- Only for a table with Unique rows: how many are used, and Reset (confirmed; the Unique setting itself is never changed here).
+                     Part of the Roll controls, so it stays in view after every roll. -->
+                <WrapPanel x:Name="UsedResultsBar" Margin="0,8,0,0" IsVisible="{Binding HasUniqueRows}">
+                    <TextBlock x:Name="UsedResultsSummaryText" Text="{Binding UsedResultsSummary}" Foreground="#555" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <Button x:Name="ResetUsedResultsButton" Content="Reset Used Results…" Padding="10,2" VerticalAlignment="Center"
+                            Command="{Binding ResetUsedResultsCommand}"
+                            ToolTip.Tip="Make every used Unique result of this table available to roll again. Which rows are Unique does not change." />
+                </WrapPanel>
+                <!-- The current table's own options, read-only: what Clamp actually does here and whether it is a Manual-selection table.
+                     They are changed only in Edit table (the tooltip says so). The two items wrap onto two lines in a narrow window. -->
+                <WrapPanel x:Name="TableOptionsBar" Margin="0,8,0,0" HorizontalAlignment="Left" Background="Transparent"
+                           ToolTip.Tip="{Binding TableOptionsToolTip}">
+                    <TextBlock x:Name="ClampStatusText" Text="{Binding ClampStatus}" Foreground="#666" Margin="0,0,16,0" />
+                    <TextBlock x:Name="ManualSelectionStatusText" Text="{Binding ManualSelectionStatus}" Foreground="#666" />
+                </WrapPanel>
+                <!-- One app-wide setting, remembered between sessions. Off is exactly the behavior Gidubba always had. -->
+                <CheckBox x:Name="AutoFollowBox" Content="Auto-follow linked tables" IsChecked="{Binding AutoFollow.IsOn}" Margin="0,8,0,0"
+                          HorizontalAlignment="Left"
+                          ToolTip.Tip="After a roll or a result you enter, open its one linked table and roll it, and so on. Manual-selection tables are opened but not rolled." />
+                <TextBlock x:Name="ModifierErrorText" Text="{Binding ModifierError}" Foreground="{DynamicResource ProblemText}" Margin="0,6,0,0"
+                           IsVisible="{Binding HasModifierError}" />
+                <TextBlock Text="{Binding Message}" Foreground="{DynamicResource ProblemText}" Margin="0,6,0,0" />
+            </StackPanel>
+
+            <WrapPanel Margin="0,24,0,6">
+                <TextBlock Text="{Binding Title, StringFormat='Table: {0}'}" FontWeight="SemiBold" Foreground="#555" VerticalAlignment="Center" Margin="0,0,16,0" />
+                <!-- Export…: one result set of this table, as plain text, Sojour rows, Foundry VTT JSON or Owlbear Rodeo Tables+ JSON, or the whole
+                     table as a PUM Companion bundle. Read-only: rolls and results are untouched. -->
+                <ComboBox x:Name="CopyResultSetBox" ItemsSource="{Binding CopyResultSetNames}" SelectedIndex="{Binding CopyResultSetIndex}"
+                          MinWidth="120" Margin="0,0,6,0" VerticalAlignment="Center"
+                          AutomationProperties.Name="Result set to export" ToolTip.Tip="Which result set Export… copies or saves"
+                          IsVisible="{Binding ShowCopyResultSetChoice}" />
+                <Button x:Name="ExportButton" Content="Export…" Padding="10,2" VerticalAlignment="Center" Click="OnExportClick"
+                        ToolTip.Tip="Copy this table as plain text, as rows for a Sojour Lookup Table, or as JSON for Foundry VTT's Roll Table Importer or Owlbear Rodeo (Tables+), or save it for PUM Companion">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="ExportMenu">
+                            <MenuItem Header="Copy Table Text" Command="{Binding CopyTableTextCommand}"
+                                      ToolTip.Tip="Plain text: name, dice, then one range and result per line" />
+                            <MenuItem Header="Copy Table Text (Spaces)" Command="{Binding CopyTableTextSpacesCommand}"
+                                      ToolTip.Tip="The same plain text, with one space instead of a tab between each range and its result" />
+                            <MenuItem Header="Copy for Sojour" Command="{Binding CopyForSojourCommand}"
+                                      ToolTip.Tip="Only the rows, range and result per line, to paste with Ctrl+V into a Sojour Lookup Table" />
+                            <Separator />
+                            <MenuItem Header="Copy Foundry JSON" Command="{Binding CopyFoundryJsonCommand}"
+                                      ToolTip.Tip="JSON to paste into Foundry VTT's Roll Table Importer" />
+                            <MenuItem Header="Save Foundry JSON…" Command="{Binding SaveFoundryJsonCommand}"
+                                      ToolTip.Tip="The same JSON, saved as a .json file for Roll Table Importer" />
+                            <Separator />
+                            <MenuItem Header="Copy Tables+ JSON" Command="{Binding CopyTablesPlusJsonCommand}"
+                                      ToolTip.Tip="JSON to import into Owlbear Rodeo (Tables+)" />
+                            <MenuItem Header="Save Tables+ JSON…" Command="{Binding SaveTablesPlusJsonCommand}"
+                                      ToolTip.Tip="The same JSON, saved as a .json file to import into Owlbear Rodeo (Tables+)" />
+                            <Separator />
+                            <MenuItem Header="Save PUM Companion Bundle…" Command="{Binding SavePumBundleCommand}"
+                                      ToolTip.Tip="A .pumb file to import into PUM Companion. Exports the whole table, every result set." />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+                <TextBlock x:Name="CopyMessageText" Text="{Binding CopyMessage}" Foreground="#2E6B3A" VerticalAlignment="Center" Margin="8,0,0,0"
+                           IsVisible="{Binding HasCopyMessage}" />
+            </WrapPanel>
+            <TextBlock x:Name="ExportWarningText" Text="{Binding ExportWarning}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap"
+                       Margin="0,0,0,6" IsVisible="{Binding HasExportWarning}" />
+
+            <!-- Result sets that are genuine parallel outputs of one roll (same row count, same range at every row):
+                 shown as one aligned multi-column grid instead of separate stacked sections, mirroring the Review
+                 screen (see RollStepViewModel.IsAligned). Each column is still its own independent result set
+                 underneath — only the presentation is grouped. -->
+            <!-- The aligned table scrolls sideways on its own when its columns (never under 230 px) do not fit; headings and rows
+                 scroll together. -->
+            <ScrollViewer x:Name="AlignedRollScroller" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                          Focusable="False" IsVisible="{Binding IsAligned}">
+                <StackPanel>
+                    <!-- Laid out exactly like a row below (4 px padding, the 90 px range column, then the columns), so each heading sits
+                         over its own column at any width. -->
+                    <Border Padding="4,0" Margin="0,0,0,2">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Width="90" />
+                            <ItemsControl x:Name="AlignedRollHeaders" ItemsSource="{Binding ResultSets}" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" Padding="0,0,6,0">
+                                            <TextBlock.Width>
+                                                <MultiBinding Converter="{StaticResource AlignedWidth}">
+                                                    <Binding Path="$parent[ScrollViewer].Viewport.Width" />
+                                                    <Binding Path="$parent[UserControl].DataContext.ResultSets.Count" />
+                                                </MultiBinding>
+                                            </TextBlock.Width>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                    <ItemsControl x:Name="AlignedRollRowsList" ItemsSource="{Binding AlignedRows}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="alignedrow" Classes.matched="{Binding IsMatched}" Padding="4,2" CornerRadius="3">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding RangeLabel}" FontFamily="DejaVu Sans Mono,Liberation Mono,Consolas,monospace" Foreground="#555" Width="90" />
+                                        <ItemsControl ItemsSource="{Binding Cells}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <!-- Each cell is its own result set's row, so each is gray on its own when used; never over the
+                                                         rolled row's green. The negative margin keeps the text exactly under its column heading. -->
+                                                    <Border Classes="cell" Classes.used="{Binding IsUsed}"
+                                                            Classes.matched="{Binding $parent[ItemsControl].DataContext.IsMatched}"
+                                                            Padding="2,0" Margin="-2,0,2,0" CornerRadius="3">
+                                                        <Border.Width>
+                                                            <MultiBinding Converter="{StaticResource AlignedWidth}">
+                                                                <Binding Path="$parent[ScrollViewer].Viewport.Width" />
+                                                                <Binding Path="$parent[UserControl].DataContext.ResultSets.Count" />
+                                                            </MultiBinding>
+                                                        </Border.Width>
+                                                        <!-- The tag follows the cell's text, and goes under it when a long result leaves no room. -->
+                                                        <WrapPanel>
+                                                            <TextBlock Classes="entrytext" Classes.used="{Binding IsUsed}"
+                                                                       Classes.matched="{Binding $parent[ItemsControl].DataContext.IsMatched}"
+                                                                       views:FormattedText.Segments="{Binding Segments}" TextWrapping="Wrap" />
+                                                            <Border Classes="pill" Classes.used="{Binding IsUsed}" IsVisible="{Binding HasUniqueTag}">
+                                                                <TextBlock Classes="pilllabel" Classes.used="{Binding IsUsed}" Text="{Binding UniqueTag}" />
+                                                            </Border>
+                                                        </WrapPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Single result set, or several independent sets that are not parallel outputs (e.g. Ambient/Noise):
+                 shown one at a time, stacked, as before. -->
+            <ItemsControl x:Name="ResultSetsList" ItemsSource="{Binding ResultSets}" IsVisible="{Binding IsNotAligned}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="0,0,0,2" IsVisible="{Binding HasName}" />
+                            <ItemsControl ItemsSource="{Binding Entries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="entry" Classes.used="{Binding IsUsed}" Classes.matched="{Binding IsMatched}"
+                                                Padding="4,2" CornerRadius="3">
+                                            <Grid ColumnDefinitions="90,*">
+                                                <TextBlock Text="{Binding RangeLabel}" FontFamily="DejaVu Sans Mono,Liberation Mono,Consolas,monospace" Foreground="#555" />
+                                                <!-- The tag follows the text it belongs to, and goes under it when a long result leaves no room. -->
+                                                <WrapPanel Grid.Column="1">
+                                                    <TextBlock Classes="entrytext" Classes.used="{Binding IsUsed}" Classes.matched="{Binding IsMatched}"
+                                                               views:FormattedText.Segments="{Binding Segments}" TextWrapping="Wrap" />
+                                                    <!-- "Unique" or "Used" (words, so never colour alone); nothing for a repeatable row. -->
+                                                    <Border Classes="pill" Classes.used="{Binding IsUsed}" IsVisible="{Binding HasUniqueTag}">
+                                                        <TextBlock Classes="pilllabel" Classes.used="{Binding IsUsed}" Text="{Binding UniqueTag}" />
+                                                    </Border>
+                                                </WrapPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

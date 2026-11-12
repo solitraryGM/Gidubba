@@ -1,0 +1,74 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TableForge.StreamingOverlayWindow"
+        Title="Streaming Overlay" Width="580" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" FontSize="13" Icon="/Assets/gidubba-256.png">
+    <Window.Styles>
+        <Style Selector="TextBlock.problem">
+            <Setter Property="Foreground" Value="#A00000" />
+        </Style>
+    </Window.Styles>
+    <StackPanel Margin="18">
+        <TextBlock Text="Show the latest Gidubba result in OBS as its own Browser Source." TextWrapping="Wrap" Margin="0,0,0,10" />
+
+        <CheckBox x:Name="EnableBox" Content="Enable streaming overlay" IsChecked="{Binding IsEnabled}" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <TextBlock x:Name="OverlayStatusText" Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="#555"
+                   Classes.problem="{Binding IsProblem}" AutomationProperties.AutomationId="OverlayStatus" />
+
+        <TextBlock Text="OBS Browser Source, &quot;Local file&quot; (recommended):" FontWeight="SemiBold" />
+        <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,8">
+            <TextBox x:Name="LocalFileBox" Text="{Binding LocalFilePath, Mode=OneWay}" IsReadOnly="True" Padding="3"
+                     AutomationProperties.Name="Overlay local file path" />
+            <Button x:Name="CopyLocalFileButton" Grid.Column="1" Content="Copy" Padding="10,2" Margin="6,0,0,0" VerticalAlignment="Stretch"
+                    VerticalContentAlignment="Center" Command="{Binding CopyLocalFileCommand}" />
+        </Grid>
+
+        <TextBlock Text="Or a URL Browser Source (refresh it in OBS if OBS was started before Gidubba):" TextWrapping="Wrap" />
+        <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,8">
+            <TextBox x:Name="BrowserUrlBox" Text="{Binding BrowserUrl, Mode=OneWay}" IsReadOnly="True" Padding="3"
+                     AutomationProperties.Name="Overlay URL" />
+            <Button x:Name="CopyUrlButton" Grid.Column="1" Content="Copy" Padding="10,2" Margin="6,0,0,0" VerticalAlignment="Stretch"
+                    VerticalContentAlignment="Center" Command="{Binding CopyUrlCommand}" />
+        </Grid>
+        <TextBlock x:Name="CopyMessageText" Text="{Binding CopyMessage}" Foreground="#555" Margin="0,0,0,8" />
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,2" Spacing="6">
+            <TextBlock Text="Port:" VerticalAlignment="Center" />
+            <TextBox x:Name="PortBox" Text="{Binding PortText}" Width="90" Padding="3"
+                     AutomationProperties.Name="Overlay port">
+                <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding ApplyPortCommand}" />
+                </TextBox.KeyBindings>
+            </TextBox>
+            <Button x:Name="ApplyPortButton" Content="Apply" Padding="10,2" VerticalAlignment="Stretch" VerticalContentAlignment="Center"
+                    Command="{Binding ApplyPortCommand}"
+                    ToolTip.Tip="Use this port (1024-65535). OBS then needs a one-time refresh." />
+        </StackPanel>
+        <TextBlock x:Name="PortErrorText" Text="{Binding PortError}" Foreground="#A00000" Margin="0,0,0,4"
+                   IsVisible="{Binding HasPortError}" />
+
+        <CheckBox x:Name="ShowTableNameBox" Content="Show table name" IsChecked="{Binding ShowTableName}" Margin="0,8,0,4" />
+        <CheckBox x:Name="ShowRollValueBox" Content="Show roll value" IsChecked="{Binding ShowRollValue}" Margin="0,0,0,10" />
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,14" Spacing="6">
+            <Button x:Name="ShowTestButton" Content="Show Test Result" Padding="10,3" Command="{Binding ShowTestCommand}"
+                    ToolTip.Tip="Shows a test result on the overlay. It is not a roll and is never added to Recent rolls." />
+            <Button x:Name="ClearOverlayButton" Content="Clear Overlay" Padding="10,3" Command="{Binding ClearCommand}"
+                    ToolTip.Tip="Empties the overlay. Tables, Recent rolls and settings are not changed." />
+        </StackPanel>
+
+        <Border BorderBrush="#DDD" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="dddice 3D dice" FontWeight="SemiBold" />
+                <TextBlock x:Name="DddiceHelpText" Text="{Binding DddiceHelp}" TextWrapping="Wrap" Foreground="#555" Margin="0,2,0,6" />
+                <TextBlock x:Name="DddiceNoticeText" Text="{Binding DddiceNotice}" TextWrapping="Wrap" Foreground="#A00000" FontWeight="SemiBold" Margin="0,0,0,6"
+                           IsVisible="{Binding HasDddiceNotice}" />
+                <Button x:Name="OpenDddiceRoomButton" Content="Open my dddice room" HorizontalAlignment="Left" Padding="10,3"
+                        Command="{Binding OpenDddiceRoomCommand}" ToolTip.Tip="Opens your dddice room in your web browser"
+                        IsVisible="{Binding ShowDddiceRoom}" />
+            </StackPanel>
+        </Border>
+
+        <Button Content="Close" HorizontalAlignment="Right" Padding="16,3" IsCancel="True" Click="OnClose" />
+    </StackPanel>
+</Window>

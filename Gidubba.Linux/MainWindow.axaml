@@ -1,0 +1,300 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TableForge.ViewModels"
+        xmlns:views="using:TableForge.Views"
+        xmlns:app="using:TableForge"
+        x:Class="TableForge.MainWindow"
+        Title="Gidubba — RPG Rollable Tables" Icon="/Assets/gidubba-256.png"
+        Width="1200" Height="820" MinWidth="1000" MinHeight="640"
+        FontSize="14">
+    <Window.Styles>
+        <!-- A flat, list-like button for the Recent Rolls rows. -->
+        <Style Selector="Button.row">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="CornerRadius" Value="3" />
+        </Style>
+        <Style Selector="Button.row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#E6EDF7" />
+        </Style>
+        <Style Selector="Button.row:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#E6EDF7" />
+        </Style>
+        <Style Selector="TextBlock.deleted">
+            <Setter Property="Foreground" Value="#888" />
+            <Setter Property="FontStyle" Value="Italic" />
+        </Style>
+
+        <!-- The selected table (the one being rolled, edited or deleted) is marked by a gold bar, a tinted background and a
+             semibold name, the same whether or not the list has keyboard focus. The row's own padding is inside the row template,
+             so the selected background reaches the item's edges. -->
+        <Style Selector="ListBox#TablesList ListBoxItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="ListBox#TablesList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#E3EAF5" />
+            <Setter Property="BorderBrush" Value="#A07C14" />
+            <Setter Property="BorderThickness" Value="3,0,0,0" />
+        </Style>
+        <Style Selector="ListBox#TablesList ListBoxItem:selected TextBlock.rowname">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <!-- The gray dice and folder text are darkened so they keep their contrast on the tinted background. -->
+        <Style Selector="ListBox#TablesList ListBoxItem:selected TextBlock.rowdice">
+            <Setter Property="Foreground" Value="#555" />
+        </Style>
+        <Style Selector="ListBox#TablesList ListBoxItem:selected TextBlock.rowfolder">
+            <Setter Property="Foreground" Value="#666" />
+        </Style>
+    </Window.Styles>
+
+    <Window.DataTemplates>
+        <DataTemplate DataType="vm:PasteViewModel"><views:PasteView /></DataTemplate>
+        <DataTemplate DataType="vm:ReviewViewModel"><views:ReviewView /></DataTemplate>
+        <DataTemplate DataType="vm:RollViewModel"><views:RollView /></DataTemplate>
+    </Window.DataTemplates>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" BorderBrush="#DDD" BorderThickness="0,1,0,0" Background="#F6F6F6" Padding="12,6">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Text="{Binding Status}" Foreground="#444" MinHeight="18" TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" ToolTip.Tip="{Binding Status}" />
+                <!-- The OBS result overlay: its settings, Show Test Result and Clear Overlay. -->
+                <Button x:Name="StreamingOverlayButton" Grid.Column="1" Content="Streaming Overlay…" Padding="8,2" Margin="12,0,0,0"
+                        Command="{Binding StreamingOverlayCommand}" ToolTip.Tip="Show Gidubba results in OBS"
+                        IsVisible="{Binding HasStreamingOverlay}" />
+                <!-- Where the tables and settings live (to back them up by copying the folder while Gidubba is closed). -->
+                <Button x:Name="OpenDataFolderButton" Grid.Column="2" Content="Open Data Folder" Padding="8,2" Margin="6,0,0,0"
+                        Command="{Binding OpenDataFolderCommand}" ToolTip.Tip="{Binding DataFolder}"
+                        IsVisible="{Binding HasDataFolder}" />
+                <!-- The Gidubba guide, in the person's own browser. -->
+                <Button x:Name="HelpButton" Grid.Column="3" Content="Help &amp; Tips" Padding="8,2" Margin="6,0,0,0"
+                        Command="{Binding HelpCommand}" ToolTip.Tip="Open the Gidubba guide in your web browser"
+                        IsVisible="{Binding HasHelp}" />
+                <Button x:Name="AboutButton" Grid.Column="4" Content="About" Padding="8,2" Margin="6,0,0,0"
+                        Command="{Binding AboutCommand}" ToolTip.Tip="About Gidubba"
+                        IsVisible="{Binding HasAbout}" />
+                <TextBlock Grid.Column="5" x:Name="VersionText" Text="{x:Static app:AppInfo.VersionAndBuild}" Foreground="#888"
+                           Margin="12,0,0,0" VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <Grid ColumnDefinitions="280,*">
+
+            <!-- The whole left pane scrolls if the window is short, so nothing in it is ever out of reach. -->
+            <ScrollViewer Grid.Column="0" x:Name="LeftScroll" Margin="12,12,0,12" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="LeftContent" Margin="0,0,12,0">
+                    <TextBlock Text="Collection" FontWeight="SemiBold" Margin="0,0,0,4" />
+                    <ComboBox x:Name="CollectionBox" ItemsSource="{Binding Collections}" SelectedItem="{Binding SelectedCollection}"
+                              HorizontalAlignment="Stretch" Margin="0,0,0,6">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <!-- Acting on the selected collection: save it as a .tfcollection file, or delete it with everything in it. -->
+                    <UniformGrid x:Name="CollectionActions" Rows="1" Columns="2" Margin="0,0,0,6">
+                        <Button x:Name="ExportCollectionButton" Content="Export Collection…" Margin="0,0,3,0" Padding="4,2"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Command="{Binding ExportCollectionCommand}"
+                                ToolTip.Tip="Save the selected collection as a file another copy of Gidubba can import" />
+                        <Button x:Name="DeleteCollectionButton" Content="Delete Collection…" Margin="3,0,0,0" Padding="4,2"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Command="{Binding DeleteCollectionCommand}"
+                                ToolTip.Tip="Delete the selected collection and every table in it" />
+                    </UniformGrid>
+                    <!-- The selected collection as a .pumb bundle for PUM Companion, after a review. -->
+                    <Button x:Name="ExportPumButton" Content="Export to PUM Companion…" Padding="4,2" Margin="0,0,0,6"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Command="{Binding ExportPumCommand}"
+                            ToolTip.Tip="Save the selected collection as a .pumb file to import into PUM Companion" />
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                        <TextBox x:Name="NewCollectionBox" Text="{Binding NewCollectionName}"
+                                 ToolTip.Tip="Name for a new collection (press Enter to create it)">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding CreateCollectionCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <Button Grid.Column="1" Content="New collection" Margin="6,0,0,0" Padding="8,2" VerticalAlignment="Stretch"
+                                VerticalContentAlignment="Center" Command="{Binding CreateCollectionCommand}" />
+                    </Grid>
+                    <!-- The other way to get a new collection: from a .tfcollection file. Existing collections are never changed. -->
+                    <Button x:Name="ImportCollectionButton" Content="Import Collection…" HorizontalAlignment="Left" Padding="8,2" Margin="0,0,0,16"
+                            Command="{Binding ImportCollectionCommand}"
+                            ToolTip.Tip="Add a collection from a .tfcollection file (existing collections are not changed)" />
+
+                    <Button x:Name="PasteTableButton" Content="Paste Table…" Padding="8,6" Margin="0,0,0,16"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Command="{Binding PasteTableCommand}" />
+
+                    <!-- Which dice roll the tables. Built-in is the default and needs nothing; dddice shows real 3D dice (in their own
+                         window) and needs the internet. Kept above the folder and table lists so it is always in view without scrolling. -->
+                    <StackPanel x:Name="DiceChoice" Margin="0,0,0,16" DataContext="{Binding DiceProviders}"
+                                IsVisible="{Binding Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <TextBlock Text="Dice" FontWeight="SemiBold" Margin="0,0,0,2" />
+                        <RadioButton x:Name="BuiltInRadio" GroupName="DiceProvider" Content="Built-in" Margin="0,2,0,0"
+                                     IsChecked="{Binding IsBuiltInSelected, Mode=TwoWay}" />
+                        <RadioButton x:Name="DddiceRadio" GroupName="DiceProvider" Content="dddice (3D dice, needs internet)" Margin="0,2,0,0"
+                                     IsEnabled="{Binding IsDddiceAvailable}"
+                                     IsChecked="{Binding IsDddiceSelected, Mode=TwoWay}" />
+                        <!-- Who dddice rolls as (Guest, or the connected account and its theme). The account itself is managed in Account…. -->
+                        <Grid x:Name="DddiceIdentity" ColumnDefinitions="*,Auto" Margin="20,4,0,0" IsVisible="{Binding ShowDddiceIdentity}">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="DddiceIdentityText" Text="{Binding DddiceIdentityText}" Foreground="#555" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="DddiceThemeText" Text="{Binding ThemeText}" Foreground="#555" TextTrimming="CharacterEllipsis"
+                                           IsVisible="{Binding HasThemeText}" />
+                            </StackPanel>
+                            <Button x:Name="DddiceAccountButton" Grid.Column="1" Content="Account…" Padding="8,2" Margin="6,0,0,0" VerticalAlignment="Center"
+                                    Command="{Binding AccountCommand}" />
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Folder navigation: All Tables / Unfiled always present, then this collection's folders (alphabetical, flat — no nesting). -->
+                    <TextBlock Text="Folders" FontWeight="SemiBold" Margin="0,0,0,4" />
+                    <ListBox x:Name="FolderNavList" ItemsSource="{Binding FolderNav}" SelectedItem="{Binding SelectedFolderNav}"
+                             MaxHeight="140" Margin="0,0,0,6" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                        <TextBox x:Name="NewFolderBox" Text="{Binding NewFolderName}"
+                                 ToolTip.Tip="Name for a new folder in this collection (press Enter to create it)">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding NewFolderCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <Button Grid.Column="1" Content="New folder" Margin="6,0,0,0" Padding="8,2" VerticalAlignment="Stretch"
+                                VerticalContentAlignment="Center" Command="{Binding NewFolderCommand}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,16" IsVisible="{Binding IsRealFolderSelected}">
+                        <TextBox x:Name="RenameFolderBox" Text="{Binding RenameFolderName}"
+                                 ToolTip.Tip="Rename the selected folder (press Enter to apply)">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding RenameFolderCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <Button Grid.Column="1" Content="Rename" Margin="6,0,0,0" Padding="8,2" VerticalAlignment="Stretch"
+                                VerticalContentAlignment="Center" Command="{Binding RenameFolderCommand}" />
+                        <Button Grid.Column="2" Content="Delete" Margin="6,0,0,0" Padding="8,2" VerticalAlignment="Stretch"
+                                VerticalContentAlignment="Center" Command="{Binding DeleteFolderCommand}" />
+                    </Grid>
+
+                    <TextBlock Text="Tables" FontWeight="SemiBold" Margin="0,0,0,4" />
+                    <TextBox x:Name="TableFilterBox" Margin="0,0,0,6" Text="{Binding TableFilter}"
+                             ToolTip.Tip="Filter tables by name. Enter opens the first match; Escape clears.">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding OpenFirstMatchCommand}" />
+                            <KeyBinding Gesture="Escape" Command="{Binding ClearFilterCommand}" />
+                        </TextBox.KeyBindings>
+                    </TextBox>
+
+                    <!-- What the list below holds: "All tables", "<folder> tables" or "Search results". -->
+                    <TextBlock x:Name="TableListHeading" Text="{Binding TableListHeading}" Foreground="#555" Margin="0,0,0,2" />
+
+                    <!-- Tall enough to fill the pane down to Edit/Delete, never less than 160 px (see MainWindow.FitTableList).
+                         Arrow keys only move the highlight; Enter or a click opens the table (so browsing never opens or "uses" tables). -->
+                    <ListBox x:Name="TablesList" ItemsSource="{Binding Tables}" SelectedItem="{Binding HighlightedTable}"
+                             MinHeight="90" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding OpenTableCommand}" />
+                        </ListBox.KeyBindings>
+                        <ListBox.ItemTemplate>
+                            <!-- A table's name (trimmed if long) with its dice on the right, and its folder below when the view calls
+                                 for it (searching, or All Tables). -->
+                            <DataTemplate>
+                                <Border Padding="5,1,4,1" Background="Transparent">
+                                    <StackPanel>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Classes="rowname" Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+                                            <TextBlock Classes="rowdice" Grid.Column="1" Text="{Binding Dice}" Foreground="#777" Margin="8,0,0,0" />
+                                        </Grid>
+                                        <TextBlock Classes="rowfolder" Text="{Binding FolderName}" FontSize="11" Foreground="#999" TextTrimming="CharacterEllipsis"
+                                                   IsVisible="{Binding $parent[Window].DataContext.ShowFolderInList}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Grid x:Name="TableActions" ColumnDefinitions="*,*" Margin="0,6,0,0">
+                        <Button Content="Edit table" Padding="8,4" Margin="0,0,3,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Command="{Binding EditTableCommand}" />
+                        <Button Grid.Column="1" Content="Delete table" Padding="8,4" Margin="3,0,0,0" HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center" Command="{Binding DeleteTableCommand}" />
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Column="1" BorderBrush="#DDD" BorderThickness="1,0,0,0">
+              <Grid RowDefinitions="Auto,*">
+                <!-- While dddice is chosen: its status, and the way back to its dice window (the dice tumble in their own window on
+                     Linux, not in this one). On a failure: Use Built-in Dice, Account… (for an account problem) and Try again. -->
+                <Border x:Name="DicePanel" Grid.Row="0" Background="#FF17281D" DataContext="{Binding DiceProviders}"
+                        IsVisible="{Binding ShowDicePanel, FallbackValue=False}">
+                    <Grid ColumnDefinitions="*,Auto" MinHeight="34">
+                        <TextBlock x:Name="DiceStatusText" Text="{Binding Message}" Foreground="#FFE8F5EA" Margin="12,7" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,4,8,4" Spacing="6">
+                            <Button x:Name="UseBuiltInButton" Content="Use Built-in Dice" Padding="10,3" Command="{Binding UseBuiltInCommand}"
+                                    IsVisible="{Binding ShowFailure}" />
+                            <Button x:Name="DiceAccountFailureButton" Content="Account…" Padding="10,3" Command="{Binding AccountCommand}"
+                                    IsVisible="{Binding ShowAccountOnFailure}" />
+                            <Button x:Name="DiceRetryButton" Content="Try again" Padding="10,3" Command="{Binding RetryCommand}"
+                                    IsVisible="{Binding ShowFailure}" />
+                            <Button x:Name="ShowDiceButton" Content="Show Dice" Padding="10,3" Click="OnShowDice"
+                                    ToolTip.Tip="Bring the dddice dice window to the front" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- The current screen, with the Recent Rolls panel at its foot. The panel's list never takes more than 40% of
+                     this area (see MainWindow.OnLayoutUpdated), so the Roll screen above stays usable. -->
+                <Grid x:Name="MainArea" Grid.Row="1" RowDefinitions="*,Auto">
+                    <Grid>
+                        <ContentControl Content="{Binding Current}" IsTabStop="False" />
+                        <TextBlock x:Name="EmptyStateBlock" Text="{Binding EmptyStateText}" Foreground="#777" TextWrapping="Wrap" TextAlignment="Center"
+                                   MaxWidth="440" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsVisible="{Binding Current, Converter={x:Static ObjectConverters.IsNull}}" />
+                    </Grid>
+
+                    <!-- Recent rolls: the last 10 rolls anywhere, newest first. Closed at start; open or closed stays as left for the
+                         session. Hover for the full snapshot; clicking reopens the table. -->
+                    <Expander x:Name="RecentRollsPanel" Grid.Row="1" IsExpanded="{Binding IsRecentRollsExpanded}" Padding="16,0,16,6"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              BorderBrush="#DDD" BorderThickness="0,1,0,0"
+                              IsVisible="{Binding ShowRecentRolls}">
+                        <Expander.Header>
+                            <TextBlock x:Name="RecentRollsHeader" Text="{Binding RecentRollsHeading}" FontWeight="SemiBold" Margin="4,4,0,4" />
+                        </Expander.Header>
+                        <ScrollViewer x:Name="RecentRollsScroller" MaxHeight="240" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="RecentRollsList" ItemsSource="{Binding RecentRolls}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Classes="row" ToolTip.Tip="{Binding FullText}"
+                                                Command="{Binding $parent[Window].DataContext.OpenRecentRollCommand}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel>
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Classes.deleted="{Binding IsDeleted}" Text="{Binding TableName}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding RollDisplay}" FontWeight="SemiBold" Margin="8,0,0,0" />
+                                                </Grid>
+                                                <!-- Time, any "Rerolled N×", then the whole result: wrapped, never cut short. -->
+                                                <TextBlock x:Name="RecentRollDetail" Text="{Binding Detail}" FontSize="12" Foreground="#666" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Expander>
+                </Grid>
+              </Grid>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

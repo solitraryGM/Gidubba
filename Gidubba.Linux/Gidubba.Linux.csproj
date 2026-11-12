@@ -1,0 +1,91 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Gidubba for Linux: an Avalonia front end over the same logic the Windows (WPF) build uses.
+    Everything that is not user interface is compiled straight from ..\TableForge (linked, not copied), so the two builds
+    can never drift apart: Domain, Import, Export, Data, Portable, Streaming, Dice and the ViewModels.
+    What is replaced here: the views (AXAML), the clipboard, the file dialogs, message boxes, opening folders and web pages,
+    and the dddice 3D dice (WebView2 has no Linux version; see README-LINUX.md).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>TableForge</RootNamespace>
+    <AssemblyName>gidubba</AssemblyName>
+    <ApplicationManifest></ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <!-- The dddice dice window calls GTK 4 / WebKitGTK directly (Dice/NativeWebKit.cs). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
+    <!-- Version and product details come from the Windows project, so a new upstream release needs no edit here.
+         They are read when the project loads (not in a target), so file, assembly and informational versions all follow.
+         The values after each are fallbacks, used only if ../TableForge/TableForge.csproj is missing or lacks that entry. -->
+    <WindowsProjectFile>$(MSBuildThisFileDirectory)..\TableForge\TableForge.csproj</WindowsProjectFile>
+    <_WinProj Condition="Exists('$(WindowsProjectFile)')">$([System.IO.File]::ReadAllText('$(WindowsProjectFile)'))</_WinProj>
+    <Version>$([System.Text.RegularExpressions.Regex]::Match($(_WinProj), '(?&lt;=&lt;Version&gt;)\s*[^&lt;]+?(?=\s*&lt;/Version&gt;)').Value.Trim())</Version>
+    <Product>$([System.Text.RegularExpressions.Regex]::Match($(_WinProj), '(?&lt;=&lt;Product&gt;)\s*[^&lt;]+?(?=\s*&lt;/Product&gt;)').Value.Trim())</Product>
+    <AssemblyTitle>$([System.Text.RegularExpressions.Regex]::Match($(_WinProj), '(?&lt;=&lt;AssemblyTitle&gt;)\s*[^&lt;]+?(?=\s*&lt;/AssemblyTitle&gt;)').Value.Trim())</AssemblyTitle>
+    <Company>$([System.Text.RegularExpressions.Regex]::Match($(_WinProj), '(?&lt;=&lt;Company&gt;)\s*[^&lt;]+?(?=\s*&lt;/Company&gt;)').Value.Trim())</Company>
+    <Authors>$([System.Text.RegularExpressions.Regex]::Match($(_WinProj), '(?&lt;=&lt;Authors&gt;)\s*[^&lt;]+?(?=\s*&lt;/Authors&gt;)').Value.Trim())</Authors>
+    <Copyright>$([System.Text.RegularExpressions.Regex]::Match($(_WinProj), '(?&lt;=&lt;Copyright&gt;)\s*[^&lt;]+?(?=\s*&lt;/Copyright&gt;)').Value.Trim())</Copyright>
+    <Description>$([System.Text.RegularExpressions.Regex]::Match($(_WinProj), '(?&lt;=&lt;Description&gt;)\s*[^&lt;]+?(?=\s*&lt;/Description&gt;)').Value.Trim())</Description>
+    <Version Condition="'$(Version)' == ''">0.0.0</Version>
+    <Product Condition="'$(Product)' == ''">Gidubba</Product>
+    <AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Gidubba</AssemblyTitle>
+    <Company Condition="'$(Company)' == ''">RPG Frequencies</Company>
+    <Authors Condition="'$(Authors)' == ''">RPG Frequencies</Authors>
+    <Copyright Condition="'$(Copyright)' == ''">Copyright (c) 2026 RPG Frequencies</Copyright>
+    <Description Condition="'$(Description)' == ''">Gidubba - RPG Rollable Tables</Description>
+    <Description>$(Description) (Linux)</Description>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pick the 11.3 line; change here if you want a newer Avalonia. All three must share one version. -->
+    <PackageReference Include="Avalonia" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.*" />
+
+    <!-- Same as the Windows build (Microsoft.Data.Sqlite brings the Linux native SQLite library with it). -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageReference Include="SQLitePCLRaw.core" Version="2.1.12" />
+  </ItemGroup>
+
+  <!-- The shared, non-UI code, linked from the Windows project. -->
+  <ItemGroup>
+    <Compile Include="..\TableForge\Domain\**\*.cs" LinkBase="Shared\Domain" />
+    <Compile Include="..\TableForge\Import\**\*.cs" LinkBase="Shared\Import" />
+    <Compile Include="..\TableForge\Export\**\*.cs" LinkBase="Shared\Export" />
+    <Compile Include="..\TableForge\Data\**\*.cs" LinkBase="Shared\Data" />
+    <Compile Include="..\TableForge\Portable\**\*.cs" LinkBase="Shared\Portable" />
+    <Compile Include="..\TableForge\Streaming\**\*.cs" LinkBase="Shared\Streaming" />
+    <Compile Include="..\TableForge\ViewModels\**\*.cs" LinkBase="Shared\ViewModels" />
+    <Compile Include="..\TableForge\Dice\**\*.cs" Exclude="..\TableForge\Dice\WebViewDddiceRoller.cs" LinkBase="Shared\Dice" />
+    <Compile Include="..\TableForge\AppInfo.cs" LinkBase="Shared" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <!-- The page that hosts dddice-js, shared with the Windows build. The Linux dice window (WebKitGTK) loads it from here. -->
+    <Content Include="..\TableForge\Assets\dddice-host.html" Link="Assets\dddice-host.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Where LICENSE.txt etc. live: the repo root (normally ..), or ../Gidubba-master when this folder sits beside the repo. -->
+  <PropertyGroup>
+    <GidubbaDocsDir Condition="'$(GidubbaDocsDir)' == '' And Exists('..\LICENSE.txt')">..\</GidubbaDocsDir>
+    <GidubbaDocsDir Condition="'$(GidubbaDocsDir)' == '' And Exists('..\Gidubba-master\LICENSE.txt')">..\Gidubba-master\</GidubbaDocsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Shipped beside the program; About opens them. Skipped (not a build error) if they can't be found. -->
+    <Content Include="$(GidubbaDocsDir)LICENSE.txt" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(GidubbaDocsDir)LICENSE.txt')" />
+    <Content Include="$(GidubbaDocsDir)THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(GidubbaDocsDir)THIRD-PARTY-NOTICES.txt')" />
+    <Content Include="$(GidubbaDocsDir)PRIVACY.txt" Link="PRIVACY.txt" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(GidubbaDocsDir)PRIVACY.txt')" />
+  </ItemGroup>
+
+</Project>

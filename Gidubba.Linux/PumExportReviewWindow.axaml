@@ -1,0 +1,57 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TableForge.PumExportReviewWindow"
+        Title="Export to PUM Companion" Width="680" Height="600" MinWidth="460" MinHeight="400"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" FontSize="13" Icon="/Assets/gidubba-256.png">
+    <Window.Resources>
+        <SolidColorBrush x:Key="WarningText" Color="#7A5200" />
+    </Window.Resources>
+    <!-- Summary and what needs a look first, then the full report (what Copy Report copies), then the buttons. -->
+    <Grid Margin="18" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto">
+
+        <TextBlock x:Name="PumHeading" Grid.Row="0" Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,6" />
+        <TextBlock x:Name="PumSummary" Grid.Row="1" Text="{Binding Summary}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+        <!-- Native nested tables (Collection exports only): off each time; changing it rebuilds the export shown here. -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,8" IsVisible="{Binding CanRollLinkedTables}">
+            <CheckBox x:Name="RollLinkedTablesBox" Content="Roll linked tables automatically in PUM ({{…}})" IsChecked="{Binding RollLinkedTables}"
+                      ToolTip.Tip="Write links to tables in this bundle as PUM nested rolls, so PUM rolls the linked table there. Links that must stay text are listed in the report." />
+            <TextBlock x:Name="PumLinkSummary" Text="{Binding LinkSummary}" TextWrapping="Wrap" Margin="26,2,0,0"
+                       IsVisible="{Binding HasLinkSummary}" />
+            <Border BorderBrush="#7A5200" BorderThickness="1" Background="#FFF8E6" Padding="8,6" Margin="0,6,0,0"
+                    IsVisible="{Binding ShowNameClashWarning}">
+                <TextBlock x:Name="PumNameClashWarning" Text="{Binding NameClashWarning}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+
+        <ItemsControl x:Name="PumImportant" Grid.Row="3" ItemsSource="{Binding Important}" Margin="0,0,0,8"
+                      IsVisible="{Binding HasImportant}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding ., StringFormat='⚠ {0}'}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" Margin="0,0,0,2" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Border Grid.Row="4" BorderBrush="#7A5200" BorderThickness="1" Background="#FFF8E6" Padding="8,6" Margin="0,0,0,10"
+                IsVisible="{Binding CanSave}">
+            <TextBlock x:Name="PumReimportWarning" Text="{Binding ReimportWarning}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" />
+        </Border>
+
+        <TextBlock Grid.Row="5" Text="Full report" FontWeight="SemiBold" Margin="0,0,0,4" />
+        <TextBox x:Name="PumReportText" Grid.Row="6" Text="{Binding ReportText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" FontFamily="DejaVu Sans Mono,Liberation Mono,Consolas,monospace" FontSize="12" Margin="0,0,0,10"
+                 AutomationProperties.Name="Full export report" />
+
+        <DockPanel Grid.Row="7" LastChildFill="False">
+            <Button x:Name="CopyReportButton" DockPanel.Dock="Left" Content="Copy Report" Padding="10,3" Command="{Binding CopyReportCommand}"
+                    ToolTip.Tip="Copy the full report to the clipboard" />
+            <TextBlock x:Name="PumCopyMessage" DockPanel.Dock="Left" Text="{Binding CopyMessage}" Foreground="#2E6B3A" VerticalAlignment="Center" Margin="8,0,0,0"
+                       IsVisible="{Binding HasCopyMessage}" />
+            <Button x:Name="PumCancelButton" DockPanel.Dock="Right" Content="{Binding CancelLabel}" Padding="16,3" IsCancel="True" Click="OnCancel" />
+            <Button x:Name="SaveBundleButton" DockPanel.Dock="Right" Content="Save Bundle…" Padding="16,3" Margin="0,0,6,0" IsDefault="True"
+                    IsVisible="{Binding CanSave}" Click="OnSave"
+                    ToolTip.Tip="Choose where to save the .pumb file" />
+        </DockPanel>
+    </Grid>
+</Window>

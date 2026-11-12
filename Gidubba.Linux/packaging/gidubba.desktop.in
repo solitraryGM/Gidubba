@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Gidubba
+Comment=Turn RPG random tables from PDFs into rollable digital tables
+Exec=@EXEC@
+Icon=gidubba
+Terminal=false
+Categories=Game;Utility;

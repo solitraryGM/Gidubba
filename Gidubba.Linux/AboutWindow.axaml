@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TableForge.AboutWindow"
+        Title="About Gidubba" Width="440" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" FontSize="13" Icon="/Assets/gidubba-256.png">
+    <StackPanel Margin="18">
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <Image Source="/Assets/gidubba-64.png" Width="48" Height="48" Margin="0,0,12,0" VerticalAlignment="Center" />
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock x:Name="AboutName" Text="{Binding Name}" FontSize="22" FontWeight="SemiBold" />
+                <TextBlock x:Name="AboutVersion" Text="{Binding VersionLine}" Foreground="#555" />
+            </StackPanel>
+        </StackPanel>
+        <TextBlock Text="{Binding PurposeLine}" TextWrapping="Wrap" Margin="0,0,0,8" />
+        <TextBlock x:Name="AboutPublisher" Text="{Binding PublisherLine}" Foreground="#555" Margin="0,0,0,4" />
+        <Button x:Name="AboutProjectLink" Classes="link" HorizontalAlignment="Left" Margin="0,0,0,12"
+                Command="{Binding OpenProjectPageCommand}" ToolTip.Tip="Opens in your web browser">
+            <TextBlock Text="{Binding ProjectUrlText, Mode=OneWay}" />
+        </Button>
+        <WrapPanel Margin="0,0,0,12">
+            <Button Content="Open Data Folder" Padding="8,2" Margin="0,0,6,6" Command="{Binding OpenDataFolderCommand}" ToolTip.Tip="{Binding DataFolder}" />
+            <Button Content="License" Padding="8,2" Margin="0,0,6,6" Command="{Binding OpenLicenseCommand}" />
+            <Button Content="Privacy" Padding="8,2" Margin="0,0,6,6" Command="{Binding OpenPrivacyCommand}" />
+            <Button Content="Third-party notices" Padding="8,2" Margin="0,0,6,6" Command="{Binding OpenNoticesCommand}" />
+        </WrapPanel>
+        <Button Content="Close" HorizontalAlignment="Right" Padding="16,3" IsCancel="True" IsDefault="True" Click="OnClose" />
+    </StackPanel>
+</Window>
