@@ -64,6 +64,7 @@
     <Compile Include="..\TableForge\Data\**\*.cs" LinkBase="Shared\Data" />
     <Compile Include="..\TableForge\Portable\**\*.cs" LinkBase="Shared\Portable" />
     <Compile Include="..\TableForge\Streaming\**\*.cs" LinkBase="Shared\Streaming" />
+    <Compile Include="..\TableForge\Results\**\*.cs" LinkBase="Shared\Results" />
     <Compile Include="..\TableForge\ViewModels\**\*.cs" LinkBase="Shared\ViewModels" />
     <Compile Include="..\TableForge\Dice\**\*.cs" Exclude="..\TableForge\Dice\WebViewDddiceRoller.cs" LinkBase="Shared\Dice" />
     <Compile Include="..\TableForge\AppInfo.cs" LinkBase="Shared" />

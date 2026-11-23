@@ -2,17 +2,20 @@
 
 Native Linux port of Gidubba (formerly TableForge) using Avalonia UI. The
 non-UI code (Domain, Import, Export, Data, Portable, Streaming, ViewModels,
-Dice) is **linked from ../TableForge**, not copied, so fixes there apply to
+Dice, Results) is **linked from ../TableForge**, not copied, so fixes there apply to
 both builds. Only the UI and a few platform shims live in `Gidubba.Linux/`.
 
-## Build
-Requires the .NET 10 SDK. From this folder:
+## Build and run
+Requires the .NET 10 SDK. From the top of the repository (the folder above this one), or from anywhere using its path:
 
-    dotnet build                      # debug build
-    dotnet run                        # run it
-    ./packaging/build.sh              # self-contained publish -> packaging/publish
-    ./packaging/install.sh            # install to ~/.local + app-menu entry
-    ./packaging/uninstall.sh
+    ./gidubba-linux.sh                # build if needed, then run Gidubba
+    ./gidubba-linux.sh build          # build only
+    ./gidubba-linux.sh publish        # self-contained publish -> Gidubba.Linux/packaging/publish
+    ./gidubba-linux.sh install        # publish, then install to ~/.local + app-menu entry
+    ./gidubba-linux.sh uninstall
+
+Plain `dotnet` works too: `dotnet run --project Gidubba.Linux` from the top, or `dotnet run` inside this folder.
+The version shown in the app is read from `../TableForge/TableForge.csproj`, so it always matches the Windows release.
 
 ## Status
 Builds cleanly and starts on Arch (.NET 10 SDK, Avalonia 11.3). dddice guest rolls have been checked end to end

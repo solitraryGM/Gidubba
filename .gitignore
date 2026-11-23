@@ -17,3 +17,6 @@
 
 # Screenshots/logs from the dddice research spike: not needed to build or run TableForge
 TableForge.DddiceSpike/evidence/
+
+# Linux self-contained publish (Gidubba.Linux/packaging/build.sh)
+Gidubba.Linux/packaging/publish/
