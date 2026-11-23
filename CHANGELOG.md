@@ -3,6 +3,22 @@
 Each released version of Gidubba (formerly TableForge), newest first. The full notes for each one are in
 `docs/release-notes/`. Versions before 1.2.0 were released as TableForge, and their entries keep that name.
 
+## 1.6.0
+
+- **New: Complete Result.** When a roll leads on to linked tables (opened by hand or by Auto-follow), or one Roll makes
+  several results, a panel at the top of the Roll screen puts the results together in resolution order, using each
+  result's own text. Captions say which table and roll each part came from; a linked table not rolled yet is shown as
+  pending. Rolling a linked table again replaces its part. Every individual roll stays in the trail below.
+- **Copy Complete Result** copies the result text only, one result per line ("No entry covers N." with its table's name).
+- **New (optional): Overlay shows: Complete result.** The Streaming Overlay can show a chain of linked rolls (or one Roll's
+  several results) as it grows, from the same Complete Result, instead of only the latest result. **Latest roll** stays
+  the default. Long chains keep the first result, "…" and the newest results. The overlay page and OBS sources are unchanged.
+- Rolled inline dice now keep their value when their result is superseded (the **Resolved:** line stays); only the
+  current result can be rolled.
+- An ordinary single roll looks exactly as before. Recent rolls, exports and the data format (schema 12) are unchanged,
+  and so is the Streaming Overlay unless you choose Complete result: 1.5.1 can still open the data.
+- Notes: `docs/release-notes/1.6.0.md`
+
 ## 1.5.1
 
 - **Fix: a connected dddice account reuses its room after Disconnect and Connect**, also across restarts, instead of

@@ -2,7 +2,7 @@
 
 **Gidubba turns random tables from RPG books and PDFs into fast, searchable, rollable digital tables.**
 
-Version 1.5.1 · Windows 10/11 (64-bit) · by RPG Frequencies
+Version 1.6.0 · Windows 10/11 (64-bit) · by RPG Frequencies
 
 **Formerly TableForge.** Gidubba is the new name for TableForge, from version 1.2.0. Only the name and icon changed:
 installing Gidubba over TableForge upgrades it in place and keeps all your tables and settings. Some technical names
@@ -22,12 +22,14 @@ Gidubba can also:
 - roll with fast **Built-in dice**, or optionally with **dddice** 3D visual dice, including themes from your own
   dddice account;
 - follow **linked tables** ("Scavenging → Scavenged Items") and roll **inline dice** inside results ("gain 1d4 Armor");
+- read a whole chain of linked rolls at once in the **Complete Result** panel, and copy it as plain text;
 - optionally **auto-follow linked tables**, rolling down a chain of linked tables by itself, and stopping to let you
   choose on **Manual-selection tables** such as a "current depth" selector;
 - make words in a result **bold** or *italic* on the Review screen, shown that way when it is rolled;
 - give a table an optional plain-text **description** ("Roll when entering a new region"), shown under its dice while rolling;
 - make **several rolls at once**, keeping every result;
-- show the latest result in **OBS** with the **Streaming Overlay** (dddice's 3D dice can be a separate OBS source);
+- show the latest result in **OBS** with the **Streaming Overlay**, or a whole chain of linked rolls (dddice's 3D dice can
+  be a separate OBS source);
 - **Copy Table Text** as clean plain text for other tools and VTTs;
 - **Copy for Sojour**: just the rows, ready to paste into a Sojour Lookup Table;
 - **export to Foundry VTT** as JSON for the Roll Table Importer module;
@@ -109,6 +111,9 @@ only the current result with programs on this computer (address `127.0.0.1`); it
   reach, have not been checked in PUM.
 - **Auto-follow** follows one link per result and at most 8 tables in a chain, and never chooses on a Manual-selection
   table. Every table starts as an ordinary table: mark your selector tables yourself.
+- **Complete Result** is not saved and not in Recent rolls, and the Streaming Overlay shows it only when you choose
+  **Overlay shows: Complete result**. Inline dice in results that Auto-follow rolled past cannot be rolled any more, so they
+  stay as written there.
 - **Unique Results:** which results have been used is kept on this computer only, never in exported files, and Reset
   works on a whole table. dddice tries 10 throws per result. Exports to other programs leave out Unique.
 - **Copy for Sojour** has been tested only by pasting with **Ctrl+V** into a Sojour Lookup Table; it copies one result
@@ -120,8 +125,9 @@ only the current result with programs on this computer (address `127.0.0.1`); it
 - The parser is deliberately conservative: anything it is unsure about stays together and is flagged on the Review screen
   instead of being guessed. Side-by-side columns that each restart at the same number are not split.
 - dddice accounts can use only themes with every standard die; custom dice are not supported.
-- The **Streaming Overlay** shows one current result. dddice's 3D dice can be shown in OBS only with a connected dddice
-  account, and two copies of Gidubba cannot use the same overlay port.
+- The **Streaming Overlay** shows one current result, or one current chain. It does not grow or shrink to fit: a long
+  chain needs a taller Browser Source or smaller text (Custom CSS). dddice's 3D dice can be shown in OBS only with a
+  connected dddice account, and two copies of Gidubba cannot use the same overlay port.
 
 ## Feedback and bug reports
 
@@ -151,7 +157,8 @@ components are listed in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
    Review screen — notes beside rows say where the parser was unsure — then **Save Table**.
 3. Choose a table to open it, then **Roll** (or type a number and press **Enter** to resolve a specific roll).
 4. If a result links to another table, a button appears; following it never rolls automatically, unless you turn on
-   [Auto-follow linked tables](#auto-follow-linked-tables).
+   [Auto-follow linked tables](#auto-follow-linked-tables). Once a roll leads on to other tables (or one Roll makes
+   several results), the [Complete Result](#complete-result) panel at the top of the Roll screen puts them together.
 5. After following one or more links, **← Back to …** (just above **Roll**) makes the table you started from current
    again, as a new step at the bottom; every earlier result stays. It never happens by itself. The table list always
    selects the table the Roll screen is on, so **Edit table** and **Delete table** act on that table (when the list's
@@ -251,6 +258,28 @@ spaces or blank lines at the very start and end are removed.
 While rolling, the description appears under the table's dice. A table with no description shows nothing there. A
 followed table shows its own description in its own step. The description is only a note: it never changes how the table
 rolls or resolves, and it does not appear in the table list or Recent rolls.
+
+## Complete Result
+
+When one roll leads to others (you follow a link, Auto-follow rolls down a chain, or one **Roll** makes several results),
+the **Complete Result** panel at the top of the Roll screen puts the results together in the order they were resolved,
+so the whole outcome reads in one place. Every individual roll stays below it, exactly as before.
+
+- Each part is the result's own text, as written: inline dice you rolled show their value, dice not rolled stay as written.
+  Gidubba never writes new text. A small caption above each part says which table and roll it came from, such as
+  "Occupants · 11 (resolved as 10)" for a clamped roll or "Area Type · 14 (entered)" for a result you typed.
+- Rolling a linked table again replaces that table's part, in the same place; the earlier roll stays in the trail below.
+- A linked table not rolled yet ends the panel with "→ Loot — not rolled yet" ("choose a result" for a Manual-selection
+  table). Links the last result did not follow are noted under it.
+- An ordinary single roll shows no panel, since it would only repeat the result right below.
+- **Copy Complete Result** copies the result text only, one result per line, without captions or notes. A named result set
+  reads "Name: text", and a "No entry covers N." message is copied with its table's name.
+- **← Back to …** keeps the previous Complete Result (headed "previous roll") until your next roll starts a new one.
+- The panel's height is limited, and it scrolls on its own. Click its heading to close or open it; it stays as you left it
+  while you are on that Roll screen. With its heading or **Copy Complete Result** focused, **Page Up** and **Page Down**
+  scroll it, and **Home** and **End** go to its start and end.
+- Nothing is saved, and Recent rolls still lists each roll. The Streaming Overlay shows the latest result only, unless you
+  choose [Overlay shows: Complete result](#overlay-shows-latest-roll-or-complete-result).
 
 ## Auto-follow linked tables
 
@@ -628,8 +657,10 @@ at a second, more permissive dice grammar, only the same one a table's own dice 
 
 These rolls are auxiliary: they never appear in Recent Rolls, ignore the Modifier box (and leave it as it is), and never
 re-resolve the table or follow a linked result — a result that both contains dice text and links to another table offers
-both actions independently. A roll that fails or is cancelled leaves the previous resolved line unchanged. Inline results
-are transient: rolling the parent table again, following a link, or opening another table clears them; nothing is saved.
+both actions independently. A roll that fails or is cancelled leaves the previous resolved line unchanged. Only the
+current result can be rolled: once it is superseded (by rolling the table again or following a link) its buttons go, but
+its **Resolved:** line stays with the value it was rolled to (since 1.6.0), and the [Complete Result](#complete-result)
+uses that value. Opening another table clears them; nothing is saved.
 
 ## Dice: Built-in or dddice
 
@@ -717,6 +748,33 @@ What it shows:
 - Rolling inline dice in the current result ("2d6 Skeletons") updates that result in place ("7 Skeletons"). An inline roll in
   an older result (an earlier roll of several) does not change the overlay.
 - When Gidubba closes, the overlay goes blank within a few seconds. A new Gidubba session starts with it empty.
+
+### Overlay shows: Latest roll or Complete result
+
+**Overlay shows** in **Streaming Overlay…** chooses what a roll puts on the overlay (new in 1.6.0). **Latest roll** is the
+default and works exactly as above.
+
+**Complete result** shows a chain of linked rolls, or one **Roll**'s several results, together, the same way the
+[Complete Result](#complete-result) panel assembles them. Viewers see "WALL SHRINE" and the god it is dedicated to, not
+the god's name on its own.
+
+- The chain grows as each linked result arrives: with Auto-follow, one table after another; with dddice, once each table's
+  dice settle. Starting a roll, opening a link, **← Back to …** and closing or opening the panel change nothing on the
+  overlay. After **Back**, it keeps the previous chain until your next roll.
+- An ordinary single roll looks exactly as it does with **Latest roll**.
+- The first result is shown as usual. Every later one starts with its table and its roll in bold, like the first result's
+  ("GOT1 - God Table 1: **2** — Intuneric the Murk"), as **Show table name** and **Show roll value** say. The table is
+  named only where it changes, so the results of one **Roll 3 Times** read "**6** — …", "**5** — …", "**4** — …". The Roll
+  screen's captions and its "not rolled yet" line are never shown.
+- Rolling inline dice in the newest results updates the chain in place. **Clear Overlay** and **Show Test Result** work as
+  before, and nothing older comes back afterwards.
+- A chain longer than the overlay's limits (20 lines, 4000 characters of text) keeps the first result, for context, and as
+  many of the newest results as fit, with one "…" line where the others were. The newest result is always shown.
+- Changing **Overlay shows** applies from the next roll: what the overlay shows now stays, and OBS needs no refresh.
+
+The overlay page does not change size to fit: text below the Browser Source's height is not shown. For long chains, make
+the Browser Source taller in OBS, or make the text smaller with the source's **Custom CSS**, for example
+`.tf-result { font-size: 24px; }` (the default is 34px).
 
 **dddice's 3D dice in OBS.** dddice draws its own dice; Gidubba does not capture or relay them. To show them too, add
 dddice's own stream as a **second, separate** Browser Source:
